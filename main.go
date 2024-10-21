@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -27,20 +28,17 @@ func main() {
 	for z.Err() == nil {
 		byteTagName, _ := z.TagName()
 		if string(byteTagName) == "td" {
-			if z.Token().Type.String() == "EndTag" {
-				continue
+			if z.Token().Type.String() == "StartTag" {
+				z.Next()
+				data := z.Token().String()
+				if q {
+					entry.question = data
+				} else {
+					entry.answer = data
+					entries = append(entries, entry)
+				}
+				q = !q
 			}
-			z.Next()
-			data := z.Token().String()
-			if q {
-				entry.question = data
-				fmt.Printf("entry: %v\n", entry)
-			} else {
-				entry.answer = data
-				fmt.Printf("entry: %v\n", entry)
-				entries = append(entries, entry)
-			}
-			q = !q
 		}
 		z.Next()
 	}
@@ -51,6 +49,9 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		if err := clear(); err != nil {
+			panic(err)
+		}
 
 		for _, entry := range entries {
 			if strings.Contains(strings.ToLower(entry.question), input) {
@@ -58,6 +59,18 @@ func main() {
 			}
 		}
 	}
+}
+
+func clear() error {
+	cmd, err := exec.Command("clear").Output()
+	if err != nil {
+		return err
+	}
+	_, err = os.Stdout.Write(cmd)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func showDeadline() {
